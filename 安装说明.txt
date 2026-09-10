@@ -1,0 +1,98 @@
+========================================================
+ Altera / Intel USB-Blaster 驱动包（Windows 11 可用版）
+========================================================
+
+驱动版本 ：2.12.28（2017-08-16）
+适用硬件 ：USB\VID_09FB&PID_6001 ~ 6009（原厂及克隆 USB-Blaster）
+适配系统 ：Windows 7 / 10 / 11，32/64 位
+
+
+一、为什么需要用这个包
+--------------------------------------------------------
+Quartus II 13.1 自带的 USB-Blaster 驱动是 2009 年的 FTDI FTDIBUS
+2.04.16，使用 VeriSign 2009/2011 旧交叉证书签名。
+
+Windows 11（24H2 及以后）的代码完整性策略
+已不再放行这类旧交叉签名内核驱动，会出现：
+
+  - 设备管理器：黄色感叹号，代码 39
+    "Windows 无法加载这个硬件的设备驱动程序"
+  - 事件日志：驱动加载返回 0xC000026C
+  - 代码完整性日志：未满足 Authenticode 签名要求
+
+这与开发板、Quartus 软件本身无关，只是驱动签名链太旧。
+
+本包内是 Intel Quartus 17.1 及以后版本附带的驱动：
+  - usbblstr.sys  ：FTDI FTDIBUS 2.12.28，由 FTDI 用 Symantec EV 证书签名
+  - usbblstr.cat  ：由 Intel Corporation (Intel FPGA) 签名
+使用现代证书链，可正常通过 Windows 11 代码完整性检查。
+
+
+二、安装方法（任选一种）
+--------------------------------------------------------
+方法 1（推荐）
+    双击运行本目录下的「安装驱动.bat」，
+    Windows 弹出 UAC 时点“是”。
+
+方法 2（手动，无需脚本）
+    右键 usbblstr.inf → 安装
+
+    若设备已存在旧驱动：
+    设备管理器 → 找到「Altera USB-Blaster」→ 右键
+    → 更新驱动程序 → 浏览我的电脑 → 选择本目录 → 下一步
+
+方法 3（管理员命令行）
+    pnputil /add-driver "本目录\usbblstr.inf" /install
+
+
+三、验证是否成功
+--------------------------------------------------------
+设备管理器：「Altera USB-Blaster」正常显示，无黄色感叹号。
+
+命令行验证（路径按实际 Quartus 安装位置调整）：
+
+    <Quartus安装目录>\quartus\bin64\jtagconfig.exe
+
+正常输出示例：
+
+    1) USB-Blaster [USB-0]
+       020F10DD   EP3C(10|5)/EP4CE(10|6)
+
+第二行就是板上的 FPGA 芯片，说明下载器和芯片都识别到了。
+
+也可以执行：
+
+    <Quartus安装目录>\quartus\bin64\quartus_pgm.exe -l
+
+应列出 USB-Blaster [USB-0]。
+
+
+四、文件清单
+--------------------------------------------------------
+usbblstr.inf            驱动安装信息文件
+usbblstr.cat            数字签名目录（Intel Corporation 签名）
+license.txt             FTDI 许可说明
+
+x64\usbblstr.sys        64 位内核驱动（FTDI 2.12.28）
+x64\usbblstr64.dll      64 位 D2XX 接口库
+x64\usbblstrui.dll      64 位设备属性页
+x64\usbblstrlang.dll    64 位语言资源
+
+x32\usbblstr.sys        32 位内核驱动（FTDI 2.12.28）
+x32\usbblstr32.dll      32 位 D2XX 接口库
+x32\usbblstrui.dll      32 位设备属性页
+x32\usbblstrlang.dll    32 位语言资源
+
+
+五、备注
+--------------------------------------------------------
+1 请勿修改包内任何文件，改动会导致签名校验失败、驱动无法加载。
+
+2. 驱动来源说明：本包取自 Intel Quartus 官方驱动。
+   二进制为 Intel / FTDI 原厂签名，并非第三方重新签名。
+
+3. 若日后需要卸载：
+   管理员命令行执行
+   pnputil /delete-driver oemXX.inf /uninstall
+   （oemXX.inf 为系统分配的驱动包编号，可通过
+    pnputil /enum-drivers 查找 USB-Blaster 对应条目）
